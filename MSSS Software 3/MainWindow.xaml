@@ -1,0 +1,124 @@
+﻿<Window x:Class="MSSS_Software_3.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MSSS_Software_3"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1.3*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left column -->
+        <DockPanel Grid.Column="0" LastChildFill="True">
+
+            <!-- Title -->
+            <Label Content="Unfiltered"
+                   DockPanel.Dock="Top"
+                   FontWeight="Bold"
+                   Margin="5"/>
+
+            <!-- The Grid here should NOT be docked -->
+            <Grid Margin="5">
+
+                <ListView Name="UnfilteredView" d:ItemsSource="{d:SampleData ItemCount=5}">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="ID" Width="75"
+                                DisplayMemberBinding="{Binding Key}" />
+                            <GridViewColumn Header="Name" Width="120"
+                                DisplayMemberBinding="{Binding Value}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+            </Grid>
+
+        </DockPanel>
+
+        <!-- middle column -->
+        <DockPanel Grid.Column="1" LastChildFill="True">
+
+            <!-- Title -->
+            <Label Content="Filtered"
+           DockPanel.Dock="Top"
+           FontWeight="Bold"
+           Margin="5"/>
+
+            <TextBox
+                Name="FilterTextBox"
+                DockPanel.Dock="Top"
+                Margin="5"
+                Height="25"
+                TextChanged="FilterTextBox_TextChanged"
+                VerticalContentAlignment="Center">
+            </TextBox>
+
+
+                <!-- The Grid here should NOT be docked -->
+            <Grid Margin="5">
+
+                <ListView Name="FilteredView" SelectionChanged="FilteredView_SelectionChanged">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="ID" Width="75" DisplayMemberBinding="{Binding ID}"/>
+                            <GridViewColumn Header="Name" Width="120" DisplayMemberBinding="{Binding Name}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+            </Grid>
+
+
+
+        </DockPanel>
+
+        <!--- right column -->
+        <DockPanel Grid.Column="2" LastChildFill="True">
+            <!-- Title -->
+            <Label Content="Employee Details"
+           DockPanel.Dock="Top"
+           FontWeight="Bold"
+           Margin="5"/>
+            <!-- The Grid here should NOT be docked -->
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <DockPanel Grid.Column="0">
+                    <Label Content="ID:"
+                       FontWeight="Bold"
+                       Margin="5"
+                       DockPanel.Dock="Top"/>
+                    <Label Content="Name:"
+                       FontWeight="Bold"
+                       Margin="5"
+                       DockPanel.Dock="Top"/>
+                    <Label Content="DOB:" FontWeight="Bold" Margin="5" DockPanel.Dock="Top"/>
+                    <Label Content="Date of Hiring:" FontWeight="Bold" Margin="5" DockPanel.Dock="Top"/>
+                    <Label Content="Phone Number:" FontWeight="Bold" Margin="5" DockPanel.Dock="Top"/>
+                </DockPanel>
+                <DockPanel Grid.Column="1">
+                    <Label x:Name="lbID" Content="ID here"
+                       Margin="5"
+                       DockPanel.Dock="Top"
+                       HorizontalContentAlignment="Right"/>
+                    <Label x:Name="lbName" Content="Name here"
+                       Margin="5"
+                       DockPanel.Dock="Top"
+                       HorizontalContentAlignment="Right"/>
+                    <Label x:Name="lbDOB" Content="DOB HERE" Margin="5" DockPanel.Dock="Top" HorizontalContentAlignment="Right"/>
+                    <Label x:Name="lbDOH" Content="Date of Hiring here" Margin="5" DockPanel.Dock="Top" HorizontalContentAlignment="Right"/>
+                    <Label x:Name="lbPN" Content="PN here" Margin="5" DockPanel.Dock="Top" HorizontalContentAlignment="Right"/>
+                </DockPanel>
+            </Grid>
+        </DockPanel>
+
+    </Grid>
+</Window>
