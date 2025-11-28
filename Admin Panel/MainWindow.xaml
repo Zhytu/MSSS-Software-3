@@ -22,7 +22,7 @@
 
                 <Button x:Name="BtnCreate" Grid.Column="0" Margin="5" Click="BtnCreate_Click">Create New Listing</Button>
                 <Button x:Name="BtnUpdate" Grid.Column="1" Margin="5" Click="BtnUpdate_Click">Update Existing Listing</Button>
-                <Button x:Name="BtnDelete" Grid.Column="2" Margin="5">Delete Existing Listing</Button>
+                <Button x:Name="BtnDelete" Grid.Column="2" Margin="5" Click="BtnDelete_Click">Delete Existing Listing</Button>
                 
                 
             </Grid>

@@ -83,25 +83,19 @@ namespace Admin_Panel
 			});
 		}
 
-		private PipeSender pipeSender = new PipeSender();
-
-		private string Mode = "";
-
-		private async void AdminWindow_Loaded(object sender, RoutedEventArgs e)
-		{
-			await pipeSender.ConnectAsync();
-		}
-
 
 
 		private async void BtnUpdate_Click(object sender, RoutedEventArgs e)
 		{
-			Mode = "U";
-			await pipeSender.SendMessageAsync(Data1.Text, Data2.Text, Mode);
-
+			
 		}
 
 		private void BtnCreate_Click(object sender, RoutedEventArgs e)
+		{
+
+		}
+
+		private void BtnDelete_Click(object sender, RoutedEventArgs e)
 		{
 
 		}
