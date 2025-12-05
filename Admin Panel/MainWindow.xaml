@@ -5,11 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Admin_Panel"
         mc:Ignorable="d"
-        Title="MainWindow" Height="322" Width="800">
+        ResizeMode="NoResize"
+        Title="MainWindow" Height="402" Width="800">
     <DockPanel LastChildFill="True">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="2*"/>
+                <RowDefinition Height="1*"/>
                 <RowDefinition Height="3*"/>
             </Grid.RowDefinitions>
 
@@ -20,19 +21,24 @@
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
 
-                <Button x:Name="BtnCreate" Grid.Column="0" Margin="5" Click="BtnCreate_Click">Create New Listing</Button>
+                <Button x:Name="BtnCreate" Grid.Column="0" Margin="5" Click="BtnCreate_Click" IsEnabled="False">Create New Listing</Button>
                 <Button x:Name="BtnUpdate" Grid.Column="1" Margin="5" Click="BtnUpdate_Click">Update Existing Listing</Button>
                 <Button x:Name="BtnDelete" Grid.Column="2" Margin="5" Click="BtnDelete_Click">Delete Existing Listing</Button>
                 
                 
             </Grid>
             <DockPanel LastChildFill="False" Grid.Row="1">
-                <TextBox x:Name="Data1" DockPanel.Dock="Top" Margin="5" Text="{Binding DisplayedID, Mode=TwoWay}"/>
+                <Label DockPanel.Dock="Top" Margin="3" >Current ID</Label>
+                <TextBox x:Name="Data1" DockPanel.Dock="Top" Margin="5" Text="{Binding DisplayedID, Mode=TwoWay}" IsReadOnly="True" MaxLength="9"/>
+                <Label DockPanel.Dock="Top" Margin="3" >Name</Label>
                 <TextBox x:Name="Data2" DockPanel.Dock="Top" Margin="5" Text="{Binding DisplayedName, Mode=TwoWay}"/>
-                <TextBox x:Name="Data3" DockPanel.Dock="Top" Margin="5">Line 3...</TextBox>
-                <TextBox x:Name="Data4" DockPanel.Dock="Top" Margin="5">Line 4...</TextBox>
-                <TextBox x:Name="Data5" DockPanel.Dock="Top" Margin="5">Line 5...</TextBox>
-                <StatusBar DockPanel.Dock="Bottom" Width="auto" Height="17.96"/>
+                <Label DockPanel.Dock="Top" Margin="3" >Date of Birth</Label>
+                <TextBox x:Name="Data3" DockPanel.Dock="Top" Margin="5" IsReadOnly="True" Foreground="LightGray">Date of birth...</TextBox>
+                <Label DockPanel.Dock="Top" Margin="3" >Date of Hiring</Label>
+                <TextBox x:Name="Data4" DockPanel.Dock="Top" Margin="5" IsReadOnly="True" Foreground="LightGray">Date of hiring...</TextBox>
+                <StatusBar DockPanel.Dock="Bottom" Width="auto" Height="17.96">
+                    <TextBlock Name="myStatusBarText" Opacity="100" VerticalAlignment="Center"/>
+                </StatusBar>
             </DockPanel>
             
         </Grid>
