@@ -8,12 +8,14 @@ namespace Admin_Panel
 {
 	public partial class MainWindow : Window, INotifyPropertyChanged
 	{
+		// Client for receiving messages from the main application via named pipe
 		private readonly PipeClient pipeClient = new PipeClient();
 
+		// Sender for sending commands/messages to the main application
 		private readonly PipeSenderToMain pipeSenderToMain = new PipeSenderToMain();
 
+		// Application-level Quit command
 		public static readonly RoutedCommand Quit = new RoutedCommand();
-
 
 		private int _displayedID = -1;
 		public int DisplayedID
@@ -43,19 +45,17 @@ namespace Admin_Panel
 			}
 		}
 
-
+		// Default constructor: set up UI, pipe client and command bindings
 		public MainWindow()
 		{
 			InitializeComponent();
 			DataContext = this;
 
-			pipeClient = new PipeClient();
-			pipeClient.MessageReceived += Pipe_MessageReceived; // <-- wire it here
+			pipeClient.MessageReceived += Pipe_MessageReceived;
 			_ = StartPipeClientAsync();
 
 			CommandBindings.Add(new CommandBinding(Quit, Quit_Executed));
 			InputBindings.Add(new KeyBinding(Quit, Key.A, ModifierKeys.Alt));
-
 		}
 
 		private void Quit_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -63,8 +63,7 @@ namespace Admin_Panel
 			this.Close();
 		}
 
-		// Overloaded constructor to accept initial staff ID and Name
-		// In overloaded constructor
+		// Overload: initialize window with a specific staff entry and optional create mode
 		public MainWindow(int staffId, string staffName, bool enableCreate = false)
 		{
 			InitializeComponent();
@@ -79,18 +78,17 @@ namespace Admin_Panel
 			{
 				BtnUpdate.IsEnabled = false;
 				BtnDelete.IsEnabled = false;
-				Data1.IsReadOnly = false; // allow entering new ID
+				Data1.IsReadOnly = false;
 				Data1.IsEnabled = true;
 			}
 			else
 			{
 				BtnUpdate.IsEnabled = true;
 				BtnDelete.IsEnabled = true;
-				Data1.IsReadOnly = true; // lock ID for existing entries
+				Data1.IsReadOnly = true;
 				Data1.IsEnabled = false;
 			}
 
-			pipeClient = new PipeClient();
 			pipeClient.MessageReceived += Pipe_MessageReceived;
 			_ = StartPipeClientAsync();
 
@@ -98,7 +96,7 @@ namespace Admin_Panel
 			InputBindings.Add(new KeyBinding(Quit, Key.L, ModifierKeys.Alt));
 		}
 
-
+		// Start the pipe client and attach a lightweight handler to update DisplayedID when an integer message is received
 		private async Task StartPipeClientAsync()
 		{
 			pipeClient.MessageReceived += msg =>
@@ -115,18 +113,18 @@ namespace Admin_Panel
 		public event PropertyChangedEventHandler PropertyChanged;
 		private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
+		// Handle incoming pipe messages that contain "ID,Name"
 		private void Pipe_MessageReceived(string msg)
 		{
 			Dispatcher.Invoke(() =>
 			{
-				// Expecting "ID,Name"
 				var parts = msg.Split(',');
 				if (parts.Length >= 2)
 				{
 					if (int.TryParse(parts[0], out int id))
 					{
 						DisplayedID = id;
-						DisplayedName = parts[1]; // Add this property to MainWindow
+						DisplayedName = parts[1];
 					}
 				}
 				Debug.WriteLine($"Received: {msg}");
@@ -140,7 +138,7 @@ namespace Admin_Panel
 			set { _newID = value; OnPropertyChanged(nameof(NewID)); }
 		}
 
-
+		// Update an existing staff record: validate and send update command to main app
 		private async void BtnUpdate_Click(object sender, RoutedEventArgs e)
 		{
 			if (DisplayedID <= 0) return;
@@ -153,36 +151,34 @@ namespace Admin_Panel
 				return;
 			}
 
-			string msg = $"U|{oldId}|{oldId}|{newName}"; // oldId == newId
+			string msg = $"U|{oldId}|{oldId}|{newName}";
 			await pipeSenderToMain.SendAsync(msg);
 
 			ShowStatusMessage($"Updated Staff ID {DisplayedID}.", 2);
 		}
 
+		// Ensure main application saves data before this window closes
 		protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
-			await SendSaveCommandAsync(); // notify main app to save CSV
+			await SendSaveCommandAsync();
 			base.OnClosing(e);
 		}
 
-
-
-		// Send Save command to Main App
+		// Send Save command to main application
 		private async Task SendSaveCommandAsync()
 		{
-			string msg = "S|"; // "S" = Save
+			string msg = "S|";
 			await pipeSenderToMain.SendAsync(msg);
 		}
 
-
+		// Create a new staff entry: validate and send create command to main app
 		private async void BtnCreate_Click(object sender, RoutedEventArgs e)
 		{
 			if (!BtnCreate.IsEnabled) return;
 
 			if (!int.TryParse(Data1.Text, out int newId) || newId < 770000000)
 			{
-				//ShowStatusMessage("Invalid ID. Must start with 77 and must be 9 characters.", 3);
-				//return;
+				// Intentionally allow through but validation placeholder retained
 			}
 
 			string newName = Data2.Text?.Trim();
@@ -195,21 +191,18 @@ namespace Admin_Panel
 			string msg = $"C|{newId}|{newName}";
 			await pipeSenderToMain.SendAsync(msg);
 
-			// Clear for next entry
 			DisplayedID = 77;
 			DisplayedName = "";
 		}
 
+		// Show a transient status message in the status bar with fade-out animation
 		private void ShowStatusMessage(string message, double durationSeconds)
 		{
-			// Stop any existing animation
 			myStatusBarText.BeginAnimation(OpacityProperty, null);
 
-			// Set message and make fully visible
 			myStatusBarText.Text = message;
 			myStatusBarText.Opacity = 1;
 
-			// Fade out after durationSeconds
 			var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500))
 			{
 				BeginTime = TimeSpan.FromSeconds(durationSeconds)
@@ -217,7 +210,7 @@ namespace Admin_Panel
 			myStatusBarText.BeginAnimation(OpacityProperty, fadeOut);
 		}
 
-
+		// Delete current staff entry and notify main app
 		private async void BtnDelete_Click(object sender, RoutedEventArgs e)
 		{
 			if (DisplayedID <= 0) return;
@@ -229,6 +222,5 @@ namespace Admin_Panel
 			DisplayedName = "";
 			Data1.IsReadOnly = true;
 		}
-
 	}
 }

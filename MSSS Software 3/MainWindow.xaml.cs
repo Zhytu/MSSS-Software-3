@@ -11,45 +11,49 @@ namespace MSSS_Software_3
 {
 	public partial class MainWindow : Window
 	{
+		// Named-pipe server used to send messages to the Admin panel
 		private readonly PipeServer pipeServer = new PipeServer();
 
+		// Server that listens for messages coming from Admin_Panel
 		private readonly AdminPipeServer adminPipeServer = new AdminPipeServer();
 
-		// define a RoutedCommand for Find
+		// Routed commands exposed by the main window
 		public static readonly RoutedCommand Find = new RoutedCommand();
 		public static readonly RoutedCommand OpenAdmin = new RoutedCommand();
 
-
-
+		// Constructor: initialize UI, load data, start pipe servers, and wire-up views and commands
 		public MainWindow()
 		{
 			InitializeComponent();
 			LoadCsvIntoMasterFile("staff.csv");
 
-			_ = StartPipeServerAsync(); // existing MainAppPipe (to Admin)
+			// Start main app pipe server to accept one client connection asynchronously
+			_ = StartPipeServerAsync();
 
-			// start listening for messages from Admin_Panel
+			// Listen for messages from Admin_Panel and start the admin pipe server
 			adminPipeServer.MessageReceived += Pipe_MessageReceivedFromAdmin;
 			_ = adminPipeServer.StartAsync();
 
+			// Populate list views from the in-memory master file
 			FilteredView.ItemsSource = StaffData.MasterFile
 				.Select(kvp => new { ID = kvp.Key, Name = kvp.Value })
 				.ToList();
 			UnfilteredView.ItemsSource = StaffData.MasterFile
 				.Select(kvp => new { ID = kvp.Key, Name = kvp.Value })
-				.ToList();  // ✅ Consistent anonymous type
+				.ToList();
 
-			// bind keyboard shortcuts
+			// Bind keyboard shortcuts and commands
 			CommandBindings.Add(new CommandBinding(Find, Find_Executed));
 			CommandBindings.Add(new CommandBinding(OpenAdmin, OpenAdmin_Executed));
-			InputBindings.Add(new KeyBinding(OpenAdmin, Key.A, ModifierKeys.Alt));	
-
+			InputBindings.Add(new KeyBinding(OpenAdmin, Key.A, ModifierKeys.Alt));
 		}
+
+		// Command handler to open the Admin panel (passes selected or default staff entry)
 		private void OpenAdmin_Executed(object sender, ExecutedRoutedEventArgs e)
 		{
 			int staffId;
 			string staffName;
-			bool enableCreate = false; // default: disabled
+			bool enableCreate = false;
 
 			if (FilteredView.SelectedItem != null)
 			{
@@ -57,26 +61,26 @@ namespace MSSS_Software_3
 				staffId = selected.ID;
 				staffName = selected.Name;
 
-				// Special case for Create if Staff ID 77 or filter indicates new user
+				// If selection or filter indicates a create candidate, prepare create mode
 				if (staffId == 77 || FilterTextBox.Text == "77")
 				{
-					staffId = 77;       // reset ID for creation
-					staffName = "";    // reset name for creation
-					enableCreate = true; // enable the Create button
+					staffId = 77;
+					staffName = "";
+					enableCreate = true;
 				}
 			}
 			else
 			{
-				// No selection → create new
+				// No selection: default to create mode
 				staffId = 77;
 				staffName = "";
-				enableCreate = true; // enable Create button
+				enableCreate = true;
 			}
 
-			// Pass enableCreate flag to Admin window constructor
+			// Instantiate Admin window with create flag and show it modally
 			var adminWindow = new Admin_Panel.MainWindow(staffId, staffName, enableCreate)
 			{
-				Owner = this, // modal
+				Owner = this,
 				WindowStartupLocation = WindowStartupLocation.CenterOwner
 			};
 
@@ -84,6 +88,7 @@ namespace MSSS_Software_3
 			adminWindow.ShowDialog();
 		}
 
+		// Command handler to activate the Find textbox
 		private void Find_Executed(object sender, ExecutedRoutedEventArgs e)
 		{
 			FilterTextBox.Clear();
@@ -91,16 +96,13 @@ namespace MSSS_Software_3
 			ShowStatusMessage("Command Executed: ALT + F", 2);
 		}
 
+		// Show a temporary status message and fade it out after the given duration
 		private void ShowStatusMessage(string message, double durationSeconds)
 		{
-			// Stop any existing animation
 			myStatusBarText.BeginAnimation(OpacityProperty, null);
-
-			// Set message and make fully visible
 			myStatusBarText.Text = message;
 			myStatusBarText.Opacity = 1;
 
-			// Fade out after durationSeconds
 			var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500))
 			{
 				BeginTime = TimeSpan.FromSeconds(durationSeconds)
@@ -108,12 +110,13 @@ namespace MSSS_Software_3
 			myStatusBarText.BeginAnimation(OpacityProperty, fadeOut);
 		}
 
-
+		// Start the pipe server and wait for a client connection once
 		private async Task StartPipeServerAsync()
 		{
 			await pipeServer.WaitForClientAsync();
 		}
 
+		// Handle selection changes in the filtered view: update labels and notify Admin via pipe
 		private async void FilteredView_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			if (FilteredView.SelectedItem == null) return;
@@ -126,11 +129,12 @@ namespace MSSS_Software_3
 			lbDOH.Content = GenerateRandomDOH();
 			lbPN.Content = "0" + selected.ID;
 
-			// Send both ID and Name through the pipe
+			// Send selected ID and Name to connected pipe client
 			string message = $"{selected.ID},{selected.Name}";
 			await pipeServer.SendAsync(message);
 		}
 
+		// Generate a random Date of Birth string within a plausible range
 		private string GenerateRandomDOB()
 		{
 			var rand = new Random();
@@ -140,6 +144,7 @@ namespace MSSS_Software_3
 			return start.AddDays(rand.Next(range)).ToString("dd/MM/yyyy");
 		}
 
+		// Generate a random Date of Hire string within a recent range
 		private string GenerateRandomDOH()
 		{
 			var rand = new Random();
@@ -149,6 +154,7 @@ namespace MSSS_Software_3
 			return start.AddDays(rand.Next(range)).ToString("dd/MM/yyyy");
 		}
 
+		// Filter the master file based on textbox input and update the filtered view
 		private void FilterTextBox_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			string filter = FilterTextBox.Text.Trim();
@@ -163,6 +169,7 @@ namespace MSSS_Software_3
 				.ToList();
 		}
 
+		// Load staff entries from a CSV into the in-memory master file
 		private void LoadCsvIntoMasterFile(string filePath)
 		{
 			try
@@ -183,17 +190,11 @@ namespace MSSS_Software_3
 			}
 		}
 
-
-
+		// Handle messages received from the Admin panel and apply create/update/delete/save actions
 		private void Pipe_MessageReceivedFromAdmin(string msg)
 		{
 			Dispatcher.Invoke(() =>
 			{
-				// Expected formats from Admin panel:
-				//  C|newId|newName   → Create new entry
-				//  U|oldId|ignored|newName  → Update name only
-				//  D|oldId           → Delete entry
-
 				var parts = msg.Split('|');
 				if (parts.Length == 0)
 					return;
@@ -202,38 +203,33 @@ namespace MSSS_Software_3
 
 				switch (mode)
 				{
-					case "C": // Create new staff
+					case "C":
 						if (parts.Length >= 3 && int.TryParse(parts[1], out int createId))
 						{
 							string createName = parts[2];
 
+							// If provided ID is invalid, offer to generate a new valid one
 							if (createId < 770000000)
 							{
 								MessageBoxResult result = MessageBox.Show(
-									$"ERROR: {createId} is invalid. Ensure ID starts with 77 and is 8 characters. Generate new ID?",   // message
-									"ERROR",               // title
-									MessageBoxButton.YesNo,       // buttons
-									MessageBoxImage.Question      // optional icon
+									$"ERROR: {createId} is invalid. Ensure ID starts with 77 and is 8 characters. Generate new ID?",
+									"ERROR",
+									MessageBoxButton.YesNo,
+									MessageBoxImage.Question
 								);
 
 								if (result == MessageBoxResult.Yes)
 								{
-									// RANDOMLY generate a valid new ID starting with 77
 									var rand = new Random();
-									int randomSuffix = rand.Next(0, 1000000); // 6 digits
+									int randomSuffix = rand.Next(0, 1000000);
 									createId = 770000000 + randomSuffix;
 
-									// ChecK for uniqueness
+									// Ensure uniqueness
 									while (StaffData.MasterFile.ContainsKey(createId))
 									{
 										randomSuffix = rand.Next(0, 1000000);
 										createId = 770000000 + randomSuffix;
 									}
-
-								}
-								else
-								{
-									// User clicked No
 								}
 							}
 
@@ -249,7 +245,7 @@ namespace MSSS_Software_3
 						}
 						break;
 
-					case "U": // Update existing staff name only
+					case "U":
 						if (parts.Length >= 4 && int.TryParse(parts[1], out int oldId))
 						{
 							string newName = parts[3];
@@ -266,7 +262,7 @@ namespace MSSS_Software_3
 						}
 						break;
 
-					case "D": // Delete staff
+					case "D":
 						if (parts.Length >= 2 && int.TryParse(parts[1], out int deleteId))
 						{
 							if (!StaffData.MasterFile.ContainsKey(deleteId))
@@ -281,22 +277,21 @@ namespace MSSS_Software_3
 						}
 						break;
 
-					case "S": // Save command from Admin panel
+					case "S":
 						SaveStaffDataToCsv("staff.csv");
 						ShowStatusMessage("Changes saved to CSV.", 2);
 						break;
 
-
 					default:
-						// Unknown command - ignore
+						// Ignore unrecognized commands
 						break;
 				}
 
-				// Refresh both ListViews
 				RefreshListViews();
 			});
 		}
 
+		// Persist the master file back to a CSV file
 		private void SaveStaffDataToCsv(string filePath)
 		{
 			try
@@ -315,17 +310,14 @@ namespace MSSS_Software_3
 			}
 		}
 
-
-
+		// Refresh both list views; keep filtered view in sync with current filter text
 		private void RefreshListViews()
 		{
 			UnfilteredView.ItemsSource = StaffData.MasterFile
 				.Select(kvp => new { ID = kvp.Key, Name = kvp.Value })
 				.ToList();
 
-			// Optional: refresh filtered view if needed
 			FilterTextBox_TextChanged(null, null);
 		}
-
 	}
 }
